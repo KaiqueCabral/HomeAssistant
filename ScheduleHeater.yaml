@@ -1,0 +1,63 @@
+#Code from Daniel Hjelseth Høyer: https://gist.github.com/Danielhiversen/7b51b9c8ce50334fc61e14e4850680b1
+
+blueprint:
+  name: Schedule Heater - OFF
+  description: "This automation blueprint turn the heater OFF"
+  domain: automation
+  input:
+    trigger_time_minute:
+      name: Time Pattern - Minute
+      selector:
+        number:
+          min: 0
+          max: 59
+    condition_time_before:
+      name: Condition - Before
+      selector:
+        time:
+    condition_time_after:
+      name: Condition - After
+      selector:
+        time:
+    energy_sensor:
+      name: Current Price Sensor
+      selector:
+        entity:
+          integration: tibber
+          domain: sensor
+      default: ""
+    heater_devide_id:
+      name: Heater Device
+      selector:
+        device:
+    heater_devide_switch:
+      name: Heater Switch Entity
+      selector:
+        entity:
+          integration: switch
+
+mode: single
+max_exceeded: silent
+variables:
+  energy_sensor: !input "energy_sensor"
+  energy_sensor_state: "{{ float(states[energy_sensor].state)}}"
+  energy_sensor_max: "{{ float(states[energy_sensor].attributes['max_price'])}}"
+trigger:
+  - platform: time_pattern
+    minutes: !input "trigger_time_minute"
+condition:
+  - condition: time
+    before: !input "condition_time_before"
+    after: !input "condition_time_after"
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+  - condition: template
+    value_template: "{{ energy_sensor_state > 2 }}"
+action:
+  - type: turn_on
+    device_id: !input "heater_devide_id"
+    entity_id: !input "heater_devide_switch"
