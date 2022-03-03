@@ -34,7 +34,6 @@ blueprint:
       name: Heater Switch Entity
       selector:
         entity:
-          integration: switch
 
 mode: single
 max_exceeded: silent
