@@ -17,8 +17,14 @@ blueprint:
         number:
           min: 0
           max: 100
-    trigger_time_minute:
-      name: Trigger on minute
+    trigger_time_minute_ON:
+      name: Trigger - Turn ON
+      selector:
+        number:
+          min: 0
+          max: 59
+    trigger_time_minute_OFF:
+      name: Trigger - Turn OFF
       selector:
         number:
           min: 0
@@ -40,13 +46,6 @@ blueprint:
       selector:
         entity:
           domain: switch
-    select_switch_action:
-      name: Switch Action
-      selector:
-        select:
-          options:
-            - turn_on
-            - turn_off
 
 mode: single
 max_exceeded: silent
@@ -56,9 +55,13 @@ variables:
   energy_sensor_state: "{{ float(states[energy_sensor].state)}}"
   energy_sensor_max: "{{ float(states[energy_sensor].attributes['max_price']) }}"
   is_price_acceptable: "{{ energy_sensor_state <= (energy_sensor_max * (accepted_percentage / 100)) }}"
+  var_trigger_time_minute_ON: !input trigger_time_minute_ON
+  var_trigger_time_minute_OFF: !input trigger_time_minute_OFF
 trigger:
   - platform: time_pattern
-    minutes: !input trigger_time_minute
+    minutes: !input trigger_time_minute_ON
+  - platform: time_pattern
+    minutes: !input trigger_time_minute_OFF
 condition:
   - condition: time
     before: !input condition_time_before
@@ -72,9 +75,28 @@ condition:
       - sat
       - sun
   - condition: template
-    value_template: "{{ is_price_acceptable == true }}"
+    value_template: "{{ var_trigger_time_minute_ON != var_trigger_time_minute_OFF }}"
 action:
-  - type: !input select_switch_action
-    device_id: !input heater_devide_id
-    entity_id: !input heater_devide_switch
-    domain: switch
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ now().minute == var_trigger_time_minute_ON }}"
+          - condition: template
+            value_template: "{{ is_price_acceptable == true }}"
+          - condition: state
+            entity_id: input_boolean.am_i_home
+            state: "on"
+        sequence:
+          - type: turn_on
+            device_id: !input heater_devide_id
+            entity_id: !input heater_devide_switch
+            domain: switch
+      - conditions:
+          - condition: template
+            value_template: "{{ now().minute == var_trigger_time_minute_OFF }}"
+        sequence:
+          - type: turn_off
+            device_id: !input heater_devide_id
+            entity_id: !input heater_devide_switch
+            domain: switch
+    default: []
