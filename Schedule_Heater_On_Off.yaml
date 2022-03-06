@@ -4,56 +4,56 @@ blueprint:
   domain: automation
   input:
     energy_sensor:
-      name: Tibber Current Price
+      name: "Tibber Current Price"
       selector:
         entity:
           integration: tibber
           domain: sensor
       default: ""
     accepted_percentage_below_max:
-      name: Accepted Price Below Maximum (%)
-      description: Price accepted compared to maximum price of the day
+      name: "Accepted Price (%)"
+      description: "Price accepted compared to maximum price of the day"
       selector:
         number:
           min: 0
           max: 100
     accepted_percentage_above_avg:
-      name: Accepted Price Above Average (%)
-      description: Price accepted above average price of the day
+      name: "Accepted Price Above Average (%)"
+      description: "Price accepted above average price of the day"
       selector:
         number:
           min: 0
           max: 100
     trigger_time_minute_ON:
-      name: Trigger - Turn ON
+      name: "Trigger - Turn ON"
       selector:
         number:
           min: 0
           max: 59
     trigger_time_minute_OFF:
-      name: Trigger - Turn OFF
+      name: "Trigger - Turn OFF"
       selector:
         number:
           min: 0
           max: 59
     condition_time_after_weekdays:
-      name: Condition - After (Weekdays)
+      name: "Condition - After (Weekdays)"
       selector:
         time:
     condition_time_after_weekends:
-      name: Condition - After (Weekends)
+      name: "Condition - After (Weekends)"
       selector:
         time:
     condition_time_before:
-      name: Condition - Before
+      name: "Condition - Before"
       selector:
         time:
     heater_devide_id:
-      name: Heater Device
+      name: "Heater Device"
       selector:
         device:
     heater_devide_switch:
-      name: Heater Switch Entity
+      name: "Heater Switch Entity"
       selector:
         entity:
           domain: switch
@@ -61,18 +61,18 @@ blueprint:
 mode: single
 max_exceeded: silent
 variables:
+  input_energy_sensor: !input "energy_sensor"
+  input_accepted_percentage_below_max: !input accepted_percentage_below_max
+  input_accepted_percentage_above_avg: !input accepted_percentage_above_avg
   input_trigger_time_minute_ON: !input trigger_time_minute_ON
   input_trigger_time_minute_OFF: !input trigger_time_minute_OFF
-  input_energy_sensor: !input "energy_sensor"
-  input_max_accepted_percentage: !input accepted_percentage_below_max
-  input_avg_accepted_percentage: !input accepted_percentage_above_avg
-  var_max_accepted_percentage: (input_max_accepted_percentage / 100)
-  var_avg_accepted_percentage: 1 + (input_avg_accepted_percentage / 100)
-  current_price_hour: "{{ float(states[input_energy_sensor].state) }}"
+  current_price_hour: "{{ float(states[input_energy_sensor].state)}}"
   max_price_day: "{{ float(states[input_energy_sensor].attributes['max_price']) }}"
+  var_accepted_margin_below_max: "{{ max_price_day * (input_accepted_percentage_below_max / 100) }}"
+  is_price_acceptable: "{{ current_price_hour <= var_accepted_margin_below_max }}"
   avg_price_day: "{{ float(states[input_energy_sensor].attributes['avg_price']) }}"
-  is_price_acceptable: "{{ current_price_hour <= (max_price_day * var_max_accepted_percentage) }}"
-  is_price_around_average: "{{ current_price_hour <= (avg_price_day * var_avg_accepted_percentage) }}"
+  var_within_accepted_margin: "{{ avg_price_day * (1 + (input_accepted_percentage_above_avg / 100)) }}"
+  is_price_within_acceptable_margin: "{{ current_price_hour <= var_within_accepted_margin }}"
 trigger:
   - platform: time_pattern
     minutes: !input trigger_time_minute_ON
@@ -104,7 +104,7 @@ action:
           - condition: template
             value_template: "{{ now().minute == input_trigger_time_minute_ON }}"
           - condition: template
-            value_template: "{{ is_price_around_average == true or is_price_acceptable == true }}"
+            value_template: "{{ is_price_acceptable == true or is_price_within_acceptable_margin == true }}"
           - condition: state
             entity_id: input_boolean.am_i_home
             state: "on"
@@ -124,5 +124,5 @@ action:
     default:
       - service: notify.persistent_notification
         data:
-          message: "Reason: {% if (is_price_acceptable == true) %} Price is too high! {% else %} Not sure {% endif %}"
+          message: "Reason: {% if (is_price_acceptable == false) %} Price is too high! {% else %} Not sure {% endif %}"
           title: Heater is OFF
