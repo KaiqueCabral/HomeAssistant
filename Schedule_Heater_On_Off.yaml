@@ -10,9 +10,16 @@ blueprint:
           integration: tibber
           domain: sensor
       default: ""
-    accepted_percentage:
-      name: Accepted Price (%)
+    accepted_percentage_below_max:
+      name: Accepted Price Below Maximum (%)
       description: Price accepted compared to maximum price of the day
+      selector:
+        number:
+          min: 0
+          max: 100
+    accepted_percentage_above_avg:
+      name: Accepted Price Above Average (%)
+      description: Price accepted above average price of the day
       selector:
         number:
           min: 0
@@ -54,43 +61,50 @@ blueprint:
 mode: single
 max_exceeded: silent
 variables:
-  energy_sensor: !input "energy_sensor"
-  accepted_percentage: !input accepted_percentage
-  energy_sensor_state: "{{ float(states[energy_sensor].state)}}"
-  energy_sensor_max: "{{ float(states[energy_sensor].attributes['max_price']) }}"
-  is_price_acceptable: "{{ energy_sensor_state <= (energy_sensor_max * (accepted_percentage / 100)) }}"
-  var_trigger_time_minute_ON: !input trigger_time_minute_ON
-  var_trigger_time_minute_OFF: !input trigger_time_minute_OFF
+  input_trigger_time_minute_ON: !input trigger_time_minute_ON
+  input_trigger_time_minute_OFF: !input trigger_time_minute_OFF
+  input_energy_sensor: !input "energy_sensor"
+  input_max_accepted_percentage: !input accepted_percentage_below_max
+  input_avg_accepted_percentage: !input accepted_percentage_above_avg
+  var_max_accepted_percentage: (input_max_accepted_percentage / 100)
+  var_avg_accepted_percentage: 1 + (input_avg_accepted_percentage / 100)
+  current_price_hour: "{{ float(states[input_energy_sensor].state) }}"
+  max_price_day: "{{ float(states[input_energy_sensor].attributes['max_price']) }}"
+  avg_price_day: "{{ float(states[input_energy_sensor].attributes['avg_price']) }}"
+  is_price_acceptable: "{{ current_price_hour <= (max_price_day * var_max_accepted_percentage) }}"
+  is_price_around_average: "{{ current_price_hour <= (avg_price_day * var_avg_accepted_percentage) }}"
 trigger:
   - platform: time_pattern
     minutes: !input trigger_time_minute_ON
   - platform: time_pattern
     minutes: !input trigger_time_minute_OFF
 condition:
-  - condition: time
-    before: !input condition_time_before
-    after: !input condition_time_after_weekdays
-    weekday:
-      - mon
-      - tue
-      - wed
-      - thu
-      - fri
-  - condition: time
-    before: !input condition_time_before
-    after: !input condition_time_after_weekends
-    weekday:
-      - sat
-      - sun
+  - condition: or
+    conditions:
+      - condition: time
+        before: !input condition_time_before
+        after: !input condition_time_after_weekdays
+        weekday:
+          - mon
+          - tue
+          - wed
+          - thu
+          - fri
+      - condition: time
+        before: !input condition_time_before
+        after: !input condition_time_after_weekends
+        weekday:
+          - sun
+          - sat
   - condition: template
-    value_template: "{{ var_trigger_time_minute_ON != var_trigger_time_minute_OFF }}"
+    value_template: "{{ input_trigger_time_minute_ON != input_trigger_time_minute_OFF }}"
 action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ now().minute == var_trigger_time_minute_ON }}"
+            value_template: "{{ now().minute == input_trigger_time_minute_ON }}"
           - condition: template
-            value_template: "{{ is_price_acceptable == true }}"
+            value_template: "{{ is_price_around_average == true or is_price_acceptable == true }}"
           - condition: state
             entity_id: input_boolean.am_i_home
             state: "on"
@@ -101,10 +115,14 @@ action:
             domain: switch
       - conditions:
           - condition: template
-            value_template: "{{ now().minute == var_trigger_time_minute_OFF }}"
+            value_template: "{{ now().minute == input_trigger_time_minute_OFF }}"
         sequence:
           - type: turn_off
             device_id: !input heater_devide_id
             entity_id: !input heater_devide_switch
             domain: switch
-    default: []
+    default:
+      - service: notify.persistent_notification
+        data:
+          message: "Reason: {% if (is_price_acceptable == true) %} Price is too high! {% else %} Not sure {% endif %}"
+          title: Heater is OFF
