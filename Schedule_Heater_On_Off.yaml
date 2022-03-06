@@ -29,8 +29,12 @@ blueprint:
         number:
           min: 0
           max: 59
-    condition_time_after:
-      name: Condition - After
+    condition_time_after_weekdays:
+      name: Condition - After (Weekdays)
+      selector:
+        time:
+    condition_time_after_weekends:
+      name: Condition - After (Weekends)
       selector:
         time:
     condition_time_before:
@@ -65,13 +69,17 @@ trigger:
 condition:
   - condition: time
     before: !input condition_time_before
-    after: !input condition_time_after
+    after: !input condition_time_after_weekdays
     weekday:
       - mon
       - tue
       - wed
       - thu
       - fri
+  - condition: time
+    before: !input condition_time_before
+    after: !input condition_time_after_weekends
+    weekday:
       - sat
       - sun
   - condition: template
