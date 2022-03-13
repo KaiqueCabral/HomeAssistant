@@ -1,0 +1,64 @@
+blueprint:
+  name: "Automation - Guest room/Office"
+  description: ""
+  domain: automation
+  input:
+    check_entity:
+      name: "Is there anyone in the guest room?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_there_anyone_in_the_guest_room"
+    heater_devide_id:
+      name: "Heater Device"
+      selector:
+        device:
+    heater_devide_switch:
+      name: "Heater Switch Entity"
+      selector:
+        entity:
+          domain: switch
+trigger:
+  - platform: time_pattern
+    minutes: "0"
+    id: Trigger_Minute_0
+  - platform: time_pattern
+    minutes: "20"
+    id: Trigger_Minute_20
+  - platform: time_pattern
+    minutes: "30"
+    id: Trigger_Minute_30
+  - platform: time_pattern
+    minutes: "50"
+    id: Trigger_Minute_50
+  - platform: state
+    entity_id: !input check_entity
+    id: Trigger_someone_is_in_the_guest_room
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: Trigger_Minute_0
+              - condition: trigger
+                id: Trigger_Minute_30
+              - condition: trigger
+                id: Trigger_someone_is_in_the_guest_room
+          - condition: state
+            entity_id: !input check_entity
+            state: "on"
+        sequence:
+          - type: turn_on
+            device_id: !input heater_devide_id
+            entity_id: !input heater_devide_switch
+            domain: switch
+    default:
+      - type: turn_off
+        device_id: !input heater_devide_id
+        entity_id: !input heater_devide_switch
+        domain: switch
+
+mode: single
+max_exceeded: silent
