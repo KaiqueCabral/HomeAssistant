@@ -1,0 +1,106 @@
+blueprint:
+  name: "Turn All Sockets Off"
+  description: ""
+  domain: automation
+  input:
+    anybody_home:
+      name: "Is anybody home?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_anybody_home"
+    anybody_bedroom:
+      name: "Is there anyone in the bedroom?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_there_anyone_in_the_bedroom"
+    anybody_guest_room:
+      name: "Is there anyone in the guest room?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_there_anyone_in_the_guest_room"
+    anybody_common_area:
+      name: "Is there anyone in the common area?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_there_anyone_in_the_common_area"
+    condition_time_to_turn_off:
+      name: "Turn everything OFF at:"
+      selector:
+        time:
+    bedroom_socket_devide_id:
+      name: "Bedroom Socket"
+      selector:
+        device:
+    bedroom_socket_devide_switch:
+      name: "Bedroom Socket - Switch Entity"
+      selector:
+        entity:
+          domain: switch
+    living_room_heater_devide_id:
+      name: "Living Room Heater"
+      selector:
+        device:
+    living_room_heater_devide_switch:
+      name: "Living Room Heater - Switch Entity"
+      selector:
+        entity:
+          domain: switch
+    dining_room_heater_devide_id:
+      name: "Dining Room Heater"
+      selector:
+        device:
+    dining_room_heater_devide_switch:
+      name: "Dining Room Heater - Switch Entity"
+      selector:
+        entity:
+          domain: switch
+    guest_room_heater_devide_id:
+      name: "Guest Room Heater"
+      selector:
+        device:
+    guest_room_heater_devide_switch:
+      name: "Guest Room Heater - Switch Entity"
+      selector:
+        entity:
+          domain: switch
+trigger:
+  - platform: time
+    at: !input condition_time_to_turn_off
+    id: Trigger_Time_Pattern_1-10-AM
+  - platform: state
+    entity_id: input_boolean.is_anybody_home
+    id: Trigger_Check_Is_Anybody_Home
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: Trigger_Check_Is_Anybody_Home
+          - condition: state
+            entity_id: input_boolean.is_anybody_home
+            state: "on"
+        sequence:
+          - type: turn_on
+            device_id: !input living_room_heater_devide_id
+            entity_id: !input living_room_heater_devide_switch
+            domain: switch
+    default:
+      - type: turn_off
+        device_id: !input living_room_heater_devide_id
+        entity_id: !input living_room_heater_devide_switch
+        domain: switch
+      - type: turn_off
+        device_id: !input dining_room_heater_devide_id
+        entity_id: !input dining_room_heater_devide_switch
+        domain: switch
+      - type: turn_off
+        device_id: !input guest_room_heater_devide_id
+        entity_id: !input guest_room_heater_devide_switch
+        domain: switch
+
+mode: single
+max_exceeded: silent
