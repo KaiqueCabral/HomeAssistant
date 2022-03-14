@@ -9,12 +9,6 @@ blueprint:
         entity:
           domain: input_boolean
       default: "input_boolean.is_anybody_home"
-    anybody_bedroom:
-      name: "Is there anyone in the bedroom?"
-      selector:
-        entity:
-          domain: input_boolean
-      default: "input_boolean.is_there_anyone_in_the_bedroom"
     anybody_guest_room:
       name: "Is there anyone in the guest room?"
       selector:
@@ -27,6 +21,18 @@ blueprint:
         entity:
           domain: input_boolean
       default: "input_boolean.is_there_anyone_in_the_common_area"
+    anybody_bedroom:
+      name: "Is there anyone in the bedroom?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_there_anyone_in_the_bedroom"
+    still_watching:
+      name: "Still watching?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.still_watching"
     condition_time_to_turn_off:
       name: "Turn everything OFF at:"
       selector:
@@ -70,9 +76,9 @@ blueprint:
 trigger:
   - platform: time
     at: !input condition_time_to_turn_off
-    id: Trigger_Time_Pattern_1-10-AM
+    id: Trigger_Time_Pattern
   - platform: state
-    entity_id: input_boolean.is_anybody_home
+    entity_id: !input anybody_home
     id: Trigger_Check_Is_Anybody_Home
 condition: []
 action:
@@ -81,13 +87,14 @@ action:
           - condition: trigger
             id: Trigger_Check_Is_Anybody_Home
           - condition: state
-            entity_id: input_boolean.is_anybody_home
+            entity_id: !input anybody_home
             state: "on"
         sequence:
-          - type: turn_on
-            device_id: !input living_room_heater_devide_id
-            entity_id: !input living_room_heater_devide_switch
-            domain: switch
+          - service: input_boolean.turn_on
+            data: {}
+            target:
+              entity_id:
+                - !input anybody_common_area
     default:
       - type: turn_off
         device_id: !input living_room_heater_devide_id
@@ -100,6 +107,30 @@ action:
       - type: turn_off
         device_id: !input guest_room_heater_devide_id
         entity_id: !input guest_room_heater_devide_switch
+        domain: switch
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: Trigger_Time_Pattern
+          - condition: state
+            entity_id: !input bedroom_socket_devide_switch
+            state: "on"
+          - condition: state
+            entity_id: !input still_watching
+            state: "on"
+        sequence:
+          - service: notify.mobile_app_kaique
+            data:
+              message: "Are you still watching?"
+              title: "Action required"
+          - service: input_boolean.turn_off
+            data: {}
+            target:
+              entity_id: !input still_watching
+    default:
+      - type: turn_off
+        device_id: !input bedroom_socket_devide_id
+        entity_id: !input bedroom_socket_devide_switch
         domain: switch
 
 mode: single
