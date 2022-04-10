@@ -3,6 +3,18 @@ blueprint:
   description: "This automation blueprint turn the heater OFF"
   domain: automation
   input:
+    anybody_home:
+      name: "Is anybody home?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_anybody_home"
+    anybody_common_area:
+      name: "Is there anyone in the common area?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_there_anyone_in_the_common_area"
     energy_sensor:
       name: "Tibber Current Price"
       selector:
@@ -68,10 +80,10 @@ variables:
   input_trigger_time_minute_OFF: !input trigger_time_minute_OFF
   current_price_hour: "{{ float(states[input_energy_sensor].state)}}"
   max_price_day: "{{ float(states[input_energy_sensor].attributes['max_price']) }}"
-  var_accepted_margin_below_max: "{{ max_price_day * (input_accepted_percentage_below_max / 100) }}"
-  is_price_acceptable: "{{ current_price_hour <= var_accepted_margin_below_max }}"
   avg_price_day: "{{ float(states[input_energy_sensor].attributes['avg_price']) }}"
+  var_accepted_margin_below_max: "{{ max_price_day * (input_accepted_percentage_below_max / 100) }}"
   var_within_accepted_margin: "{{ avg_price_day * (1 + (input_accepted_percentage_above_avg / 100)) }}"
+  is_price_acceptable: "{{ current_price_hour <= var_accepted_margin_below_max }}"
   is_price_within_acceptable_margin: "{{ current_price_hour <= var_within_accepted_margin }}"
 trigger:
   - platform: time_pattern
@@ -106,7 +118,10 @@ action:
           - condition: template
             value_template: "{{ is_price_acceptable == true or is_price_within_acceptable_margin == true }}"
           - condition: state
-            entity_id: input_boolean.am_i_home
+            entity_id: !input anybody_home
+            state: "on"
+          - condition: state
+            entity_id: !input anybody_common_area
             state: "on"
         sequence:
           - type: turn_on

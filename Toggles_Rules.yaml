@@ -1,5 +1,5 @@
 blueprint:
-  name: "Turn All Sockets Off"
+  name: "Toggles Rules"
   description: ""
   domain: automation
   input:
@@ -33,14 +33,6 @@ blueprint:
         entity:
           domain: input_boolean
       default: "input_boolean.still_watching"
-    condition_time_to_turn_off:
-      name: "Turn everything OFF at:"
-      selector:
-        time:
-    condition_time_to_turn_off_tv:
-      name: "Turn Off TV at:"
-      selector:
-        time:
     bedroom_socket_device_id:
       name: "Bedroom Socket"
       selector:
@@ -78,30 +70,21 @@ blueprint:
         entity:
           domain: switch
 trigger:
-  - platform: time
-    at: !input condition_time_to_turn_off
-    id: Trigger_Time_Pattern
-  - platform: time
-    at: !input condition_time_to_turn_off_tv
-    id: Trigger_Time_Pattern
   - platform: state
     entity_id: !input anybody_home
     id: Trigger_Check_Is_Anybody_Home
+  - platform: state
+    entity_id: !input anybody_bedroom
+    id: Trigger_Check_Is_Anybody_Bedroom
+  - platform: state
+    entity_id: !input anybody_common_area
+    id: Trigger_Check_Is_Anybody_Common_Area
+  - platform: state
+    entity_id: !input anybody_guest_room
+    id: Trigger_Check_Is_Anybody_Guest_Room
 condition: []
 action:
   - choose:
-      - conditions:
-          - condition: trigger
-            id: Trigger_Check_Is_Anybody_Home
-          - condition: state
-            entity_id: !input anybody_home
-            state: "on"
-        sequence:
-          - service: input_boolean.turn_on
-            data: {}
-            target:
-              entity_id:
-                - !input anybody_common_area
       - conditions:
           - condition: trigger
             id: Trigger_Check_Is_Anybody_Home
@@ -119,27 +102,58 @@ action:
   - choose:
       - conditions:
           - condition: trigger
-            id: Trigger_Time_Pattern
+            id: Trigger_Check_Is_Anybody_Common_Area
           - condition: state
-            entity_id: !input bedroom_socket_device_switch
-            state: "on"
-          - condition: state
-            entity_id: !input still_watching
+            entity_id: !input anybody_common_area
             state: "on"
         sequence:
-          - service: notify.mobile_app_kaique
-            data:
-              message: "Are you still watching?"
-              title: "Action required"
+          - type: turn_on
+            device_id: !input living_room_heater_device_id
+            entity_id: !input living_room_heater_device_switch
+            domain: switch
+      - conditions:
+          - condition: trigger
+            id: Trigger_Check_Is_Anybody_Common_Area
+          - condition: state
+            entity_id: !input anybody_common_area
+            state: "off"
+        sequence:
+          - type: turn_off
+            device_id: !input living_room_heater_device_id
+            entity_id: !input living_room_heater_device_switch
+            domain: switch
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: Trigger_Check_Is_Anybody_Bedroom
+          - condition: state
+            entity_id: !input anybody_bedroom
+            state: "on"
+        sequence:
+          - type: turn_on
+            device_id: !input bedroom_socket_device_id
+            entity_id: !input bedroom_socket_device_switch
+            domain: switch
+          - service: input_boolean.turn_on
+            data: {}
+            target:
+              entity_id:
+                - !input still_watching
+      - conditions:
+          - condition: trigger
+            id: Trigger_Check_Is_Anybody_Bedroom
+          - condition: state
+            entity_id: !input anybody_bedroom
+            state: "off"
+        sequence:
+          - type: turn_off
+            device_id: !input bedroom_socket_device_id
+            entity_id: !input bedroom_socket_device_switch
+            domain: switch
           - service: input_boolean.turn_off
             data: {}
             target:
-              entity_id: !input still_watching
-    default:
-      - type: turn_off
-        device_id: !input bedroom_socket_device_id
-        entity_id: !input bedroom_socket_device_switch
-        domain: switch
-
+              entity_id:
+                - !input still_watching
 mode: single
 max_exceeded: silent

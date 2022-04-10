@@ -1,6 +1,8 @@
 blueprint:
   name: High Electricity Price
-  description: "This automation blueprint sends a notification when current electricity price is 90% above the max price of the day."
+  description:
+    This automation blueprint sends a notification when current electricity
+    price is 90% above the max price of the day.
   domain: automation
   input:
     energy_sensor:
@@ -10,7 +12,7 @@ blueprint:
           integration: tibber
           domain: sensor
       default: ""
-
+  source_url: https://github.com/KaiqueCabral/HomeAssistant/blob/main/ElectricityPriceAbove90Percent.yaml
 mode: single
 max_exceeded: silent
 variables:
@@ -26,5 +28,7 @@ condition:
 action:
   - service: notify.persistent_notification
     data:
-      message: The electricity price now is {{energy_sensor_state}}. It is 90% above the maximum price of the day ({{energy_sensor_max}})
+      message:
+        The electricity price now is {{energy_sensor_state}}. It is 90% above
+        the maximum price of the day ({{energy_sensor_max}})
       title: High Electricity Price
