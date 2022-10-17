@@ -1,0 +1,68 @@
+blueprint:
+  name: Send notification when current price is close to minimum price
+  description: 
+    Send notification when current price is close to minimum price.
+  domain: automation
+  input:
+    energy_sensor:
+      name: Tibber Price Sensor
+      selector:
+        entity:
+          integration: tibber
+          domain: sensor
+      default: ''
+  source_url: https://github.com/KaiqueCabral/HomeAssistant/blob/main/Best-time-to-use-the-shower.yaml
+mode: single
+max_exceeded: silent
+variables:
+  energy_sensor: !input 'energy_sensor'
+  energy_sensor_state: '{{ float(states[energy_sensor].state) }}'
+  energy_sensor_max: '{{ float(states[energy_sensor].attributes[''max_price'']) }}'
+  
+trigger:
+  - platform: time_pattern
+    minutes: '0'
+    seconds: '30'
+condition:
+  condition: template
+  value_template: '{{ energy_sensor_state > 0.9 * energy_sensor_max }}'
+action:
+- service: notify.persistent_notification
+  data:
+    message: The electricity price now is {{energy_sensor_state}}. It is 90% above
+      the maximum price of the day ({{energy_sensor_max}})
+    title: High Electricity Price
+
+alias: Send notification when current price is close to minimum price
+description: ""
+trigger:
+  - platform: time_pattern
+    minutes: "0"
+    seconds: "30"
+condition:
+  - condition: template
+    value_template: >-
+      {{ float(states['sensor.electricity_price_kaique_cabral'].state) <=
+      float(states['sensor.electricity_price_kaique_cabral'].attributes['min_price'])
+      * 1.05 }}
+  - condition: time
+    before: "23:01:00"
+    after: "08:00:00"
+    weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+      - sat
+      - sun
+action:
+  - service: notify.persistent_notification
+    data:
+      title: Low Price
+      message: >-
+        Current Price: {{ states['sensor.electricity_price_kaique_cabral'].state
+        }} / Minimum Price (day): {{
+        states['sensor.electricity_price_kaique_cabral'].attributes['min_price']
+        }}
+mode: single

@@ -1,0 +1,106 @@
+blueprint:
+  name: "Turn All Sockets Off"
+  description: ""
+  domain: automation
+  input:
+    anybody_home:
+      name: "Is anybody home?"
+      selector:
+        entity:
+          domain: input_boolean
+      default: "input_boolean.is_anybody_home"
+    heater_living_room_device_id:
+      name: "Heater - Living Room"
+      selector:
+        device:
+    heater_living_room_device_switch:
+      name: "Heater - Living Room (Switch Entity)"
+      selector:
+        entity:
+          domain: switch
+    heater_dining_room_device_id:
+      name: "Heater - Diving Room"
+      selector:
+        device:
+    heater_dining_room_device_switch:
+      name: "Heater - Dining Room (Switch Entity)"
+      selector:
+        entity:
+          domain: switch
+    heater_office_room_device_id:
+      name: "Heater - Office Room"
+      selector:
+        device:
+    heater_office_room_device_switch:
+      name: "Heater - Office Room (Switch Entity)"
+      selector:
+        entity:
+          domain: switch
+    washing_machine_laundry_room_device_id:
+      name: "Washing Machine - Laundry Room"
+      selector:
+        device:
+    washing_machine_laundry_room_device_switch:
+      name: "Washing Machine - Laundry Room (Switch Entity)"
+      selector:
+        entity:
+          domain: switch
+    dish_washer_kitchen_device_id:
+      name: "Dish Washer - Kitchen"
+      selector:
+        device:
+    dish_washer_kitchen_device_switch:
+      name: "Dish Washer - Kitchen (Switch Entity)"
+      selector:
+        entity:
+          domain: switch
+    tv_living_room_device_id:
+      name: "TV - Living Room"
+      selector:
+        device:
+    tv_living_room_device_switch:
+      name: "TV - Living Room (Switch Entity)"
+      selector:
+        entity:
+          domain: switch
+trigger:
+  - platform: state
+    entity_id: !input anybody_home
+    id: Trigger_Check_Is_Anybody_Home
+condition: []
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: Trigger_Check_Is_Anybody_Home
+          - condition: state
+            entity_id: !input anybody_home
+            state: "off"
+        sequence:
+          - type: turn_off
+            device_id: !input heater_dining_room_device_id
+            entity_id: !input heater_dining_room_device_switch
+            domain: switch
+          - type: turn_off
+            device_id: !input heater_living_room_device_id
+            entity_id: !input heater_living_room_device_switch
+            domain: switch
+          - type: turn_off
+            device_id: !input heater_office_room_device_id
+            entity_id: !input heater_office_room_device_switch
+            domain: switch
+          - type: turn_off
+            device_id: !input dish_washer_kitchen_device_id
+            entity_id: !input dish_washer_kitchen_device_switch
+            domain: switch
+          - type: turn_off
+            device_id: !input tv_living_room_device_id
+            entity_id: !input tv_living_room_device_switch
+            domain: switch
+          - type: turn_off
+            device_id: !input washing_machine_laundry_room_device_id
+            entity_id: !input washing_machine_laundry_room_device_switch
+            domain: switch
+
+mode: single
+max_exceeded: silent

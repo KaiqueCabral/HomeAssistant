@@ -20,16 +20,16 @@ blueprint:
           domain: switch
 trigger:
   - platform: time_pattern
-    minutes: "0"
+    minutes: '0'
     id: Trigger_Minute_0
   - platform: time_pattern
-    minutes: "20"
+    minutes: '20'
     id: Trigger_Minute_20
   - platform: time_pattern
-    minutes: "30"
+    minutes: '30'
     id: Trigger_Minute_30
   - platform: time_pattern
-    minutes: "50"
+    minutes: '50'
     id: Trigger_Minute_50
   - platform: state
     entity_id: !input check_entity
@@ -48,7 +48,7 @@ action:
                 id: Trigger_someone_is_in_the_guest_room
           - condition: state
             entity_id: !input check_entity
-            state: "on"
+            state: 'on'
         sequence:
           - type: turn_on
             device_id: !input heater_devide_id
@@ -59,6 +59,6 @@ action:
         device_id: !input heater_devide_id
         entity_id: !input heater_devide_switch
         domain: switch
-
+        
 mode: single
 max_exceeded: silent
